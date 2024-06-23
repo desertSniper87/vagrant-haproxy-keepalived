@@ -51,8 +51,8 @@ backend webservers
     option httpchk
     option forwardfor
     option http-server-close
-    server web1 192.168.1.11:80 maxconn 32 check
-    server web2 192.168.1.12:80 maxconn 32 check
+    server web1 192.168.56.11:80 maxconn 32 check
+    server web2 192.168.56.12:80 maxconn 32 check
 EOD
 
 cp /etc/haproxy/haproxy.cfg /etc/haproxy/haproxy.cfg.orig
@@ -72,17 +72,39 @@ vrrp_script chk_haproxy {           # Requires keepalived-1.1.13
         weight 2                        # add 2 points of prio if OK
 }
 
+vrrp_track_process track_haproxy {
+      process haproxy
+      weight 20
+}
+
+
 vrrp_instance VI_1 {
-        interface eth1
         state MASTER
+        interface eth1
         virtual_router_id 51
-        priority $1
+        priority 100
+        advert_int 4
+        authentication {
+          auth_type PASS
+          auth_pass adss123
+        }
+        unicast_src_ip $private_ip
+        unicast_peer {
+          $peer_ip
+        }
         virtual_ipaddress {
-            192.168.1.2
+          192.168.56.2/24
         }
-        track_script {
-            chk_haproxy
+        track_process {
+          track_haproxy
         }
+        notify_master "/usr/bin/echo 'Master Active' > /tmp/keepalived.state"
+        notify_backup "/usr/bin/echo 'Backup Active' > /tmp/keepalived.state"
+        notify_fault "/usr/bin/echo 'Master-Backup Fault' > /tmp/keepalived.state"
+
+        # track_script {
+            # chk_haproxy
+        # }
 }
 EOD
 
