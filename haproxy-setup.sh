@@ -17,8 +17,8 @@ ENABLED=1
 EOD
 cat > /etc/haproxy/haproxy.cfg <<EOD
 global
-    log 127.0.0.1   local0
-    log 127.0.0.1   local1 notice
+    log 127.0.0.1   local0 debug
+    log 127.0.0.1   local1 debug
     daemon
     maxconn 256
 
@@ -34,7 +34,9 @@ defaults
     timeout server 50000ms
 
 frontend http-in
-    bind *:80
+    log 127.0.0.1 local0 debug
+    log 127.0.0.1   local1 debug
+    bind $vip:80 transparent interface eth1
     default_backend webservers
 
 backend webservers
@@ -102,10 +104,14 @@ vrrp_instance VI_1 {
         notify_backup "/usr/bin/echo 'Backup Active' > /tmp/keepalived.state"
         notify_fault "/usr/bin/echo 'Master-Backup Fault' > /tmp/keepalived.state"
 
-        # track_script {
-            # chk_haproxy
-        # }
+        track_script {
+            chk_haproxy
+        }
 }
 EOD
+
+# ip link add dummy0 type dummy
+# ip addr add $vip/24 dev dummy0
+# ip link set dummy0 up
 
 /etc/init.d/keepalived restart

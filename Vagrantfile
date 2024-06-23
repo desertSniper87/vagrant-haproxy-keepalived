@@ -4,10 +4,11 @@
 VAGRANTFILE_API_VERSION = "2"
 
 Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
-  config.vm.box = "ubuntu/trusty64"
-  config.vm.box_version = "20191107.0.0"
+  config.vm.box = "generic/ubuntu1804"
+  # config.vm.box_version = "20191107.0.0"
+  config.ssh.insert_key = true
   config.vm.provider "virtualbox" do |v|
-    v.customize ["modifyvm", :id, "--memory", 256]
+    v.customize ["modifyvm", :id, "--memory", 1024]
   end
 
   config.vm.define :haproxy1, primary: true do |haproxy1_config|
@@ -15,6 +16,7 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
     haproxy1_config.vm.network :private_network, ip: "192.168.56.9"
     haproxy1_config.vm.provision "shell" do |s|
       s.env = { 
+        "vip" => "192.168.56.2",
         "private_ip" => "192.168.56.9",
         "peer_ip" => "192.168.56.10"
       }
@@ -28,6 +30,7 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
     haproxy2_config.vm.network :private_network, ip: "192.168.56.10"
     haproxy2_config.vm.provision "shell" do |s|
       s.env = { 
+        "vip" => "192.168.56.2",
         "private_ip" => "192.168.56.10", 
         "peer_ip" => "192.168.56.9"
       }
